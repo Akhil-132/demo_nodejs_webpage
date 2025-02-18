@@ -45,7 +45,7 @@ jobs:
       - run:
           name: SSH into EC2 and deploy
           command: |
-            ssh -i ~/.ssh/id_rsa ec2-user@$EC2_HOSTNAME << 'EOF'
+            ssh -i ~/.ssh/id_rsa ec2-user@$EC2_HOSTNAME \<< 'EOF'
               echo "Pulling the latest Docker image on EC2..."
               sudo docker pull akhilreddy132/nodejswebapp1:latest
               echo "Stopping the existing container..."
