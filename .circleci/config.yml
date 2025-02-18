@@ -1,4 +1,5 @@
 version: 2.1
+
 jobs:
   build_test:
     docker:
@@ -8,7 +9,12 @@ jobs:
       - run:
           name: Install npm dependencies
           command: |
-            npm install --save	
+            npm install --save
+      - run:
+          name: Run tests
+          command: |
+            npm test
+
   build_docker_image:
     docker:
       - image: circleci/node:12
@@ -23,8 +29,41 @@ jobs:
             echo $DOCKER_PASSWORD | docker login -u akhilreddy132 --password-stdin
             docker push akhilreddy132/nodejswebapp1:latest
 
+  deploy_to_ec2:
+    docker:
+      - image: circleci/python:3.8  # Use a Python image as it includes SSH tools
+    steps:
+      - checkout
+      - run:
+          name: Setup SSH
+          command: |
+            mkdir -p ~/.ssh
+            echo "$EC2_SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+            chmod 600 ~/.ssh/id_rsa
+            ssh-keyscan -H $EC2_HOSTNAME >> ~/.ssh/known_hosts
+
+      - run:
+          name: SSH into EC2 and deploy
+          command: |
+            ssh -i ~/.ssh/id_rsa ec2-user@$EC2_HOSTNAME << 'EOF'
+              echo "Pulling the latest Docker image on EC2..."
+              sudo docker pull akhilreddy132/nodejswebapp1:latest
+              echo "Stopping the existing container..."
+              sudo docker stop nodejswebapp1 || true
+              sudo docker rm nodejswebapp1 || true
+              echo "Running the latest Docker container..."
+              sudo docker run -d --name nodejswebapp1 -p 8081:8081 akhilreddy132/nodejswebapp1:latest
+              echo "Deployment completed!"
+            EOF
+
 workflows:
-  build_test:
+  version: 2
+  build:
     jobs:
       - build_test
-      - build_docker_image
+      - build_docker_image:
+          requires:
+            - build_test
+      - deploy_to_ec2:
+          requires:
+            - build_docker_image
