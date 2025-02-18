@@ -46,12 +46,6 @@ jobs:
           name: SSH into EC2 and deploy
           command: |
             ssh -i $EC2_SSH_PRIVATE_KEY ubuntu@$EC2_HOSTNAME \<< 'EOF'
-              echo "Pulling the latest Docker image on EC2..."
-              sudo docker pull akhilreddy132/nodejswebapp1:latest
-              echo "Stopping the existing container..."
-              sudo docker stop nodejswebapp1 || true
-              sudo docker rm nodejswebapp1 || true
-              echo "Running the latest Docker container..."
               sudo docker run -d --name nodejswebapp1 -p 8081:8081 akhilreddy132/nodejswebapp1:latest
               echo "Deployment completed!"
             EOF
